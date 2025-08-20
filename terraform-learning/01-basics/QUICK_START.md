@@ -2,6 +2,14 @@
 
 Get up and running with Terraform in 5 minutes!
 
+## ⚠️ FREE TIER WARNING ⚠️
+
+**IMPORTANT**: This configuration uses AWS free tier resources, but you MUST:
+- **Always run `terraform destroy` when done learning**
+- **Monitor your AWS billing dashboard**
+- **Set up billing alerts to avoid charges**
+- **Read the FREE_TIER_GUIDE.md for complete cost information**
+
 ## ⚡ Prerequisites Check
 
 Before you start, make sure you have:
@@ -55,7 +63,8 @@ curl $(terraform output -raw web_url)
 - **Internet Gateway**: Provides internet access to your VPC
 - **Route Table**: Routes traffic from your subnet to the internet
 - **Security Group**: Allows SSH (port 22) and HTTP (port 80) access
-- **EC2 Instance**: A t2.micro instance running a web server
+- **EC2 Instance**: A t2.micro instance running a web server (FREE TIER)
+- **S3 Bucket**: A simple storage bucket for learning (FREE TIER)
 
 ## 🌐 Access Your Resources
 
@@ -63,14 +72,20 @@ curl $(terraform output -raw web_url)
 - **SSH Access**: Use the `ssh_command` output (if you configured a key pair)
 - **AWS Console**: Check your resources in the AWS console
 
-## 🧹 Clean Up
+## 🚨 CRITICAL: Clean Up to Avoid Charges
 
-When you're done learning:
+**When you're done learning (or after 2-3 hours max):**
 
 ```bash
 terraform destroy
 ```
 Type `yes` to confirm and remove all created resources.
+
+**Why this is critical:**
+- EC2 instances cost money after 750 free hours/month
+- EBS storage costs money after 8GB
+- S3 storage costs money after 5GB
+- **Always destroy to stop billing!**
 
 ## 🎓 Learning Tips
 
@@ -78,6 +93,7 @@ Type `yes` to confirm and remove all created resources.
 2. **Explore**: Check the AWS console to see your resources
 3. **Modify**: Add more resources to the `main.tf` file
 4. **Understand**: Read the comments in the code to learn what each section does
+5. **Time Limit**: Keep sessions under 2-3 hours to stay within free tier
 
 ## 🆘 Common Issues
 
@@ -86,13 +102,35 @@ Type `yes` to confirm and remove all created resources.
 - **Region mismatch**: Update `aws_region` in `terraform.tfvars`
 - **Permission denied**: Ensure your AWS user has EC2 and VPC permissions
 
+## 💰 Cost Monitoring
+
+### Set Up Billing Alerts
+1. Go to [AWS Billing Dashboard](https://console.aws.amazon.com/billing/)
+2. Set up alerts at $1, $5, and $10
+3. Monitor your usage daily during learning
+
+### Check Your Usage
+```bash
+# Check current costs
+aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics BlendedCost
+```
+
 ## 🎉 Congratulations!
 
 You've successfully deployed your first infrastructure with Terraform! 
 
-Next steps:
+**Next steps:**
 - Try the exercises in the `exercises/` folder
 - Move to the next module: **02-variables**
 - Experiment with different resource types
+- **ALWAYS destroy resources when done!**
 
-Happy learning! 🌟 
+## 📚 Additional Resources
+
+- **FREE_TIER_GUIDE.md**: Complete guide to staying within free tier
+- **AWS Billing Dashboard**: Monitor your costs
+- **Cost Explorer**: Track spending by service
+
+Happy learning! 🌟
+
+**Remember: Free tier is great for learning, but always clean up!** 🧹 

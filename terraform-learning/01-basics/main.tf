@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -19,6 +23,7 @@ provider "aws" {
       Environment = var.environment
       Project     = var.project_name
       ManagedBy   = "Terraform"
+      FreeTier    = "Yes"
     }
   }
 }
@@ -97,12 +102,12 @@ resource "aws_security_group" "ec2" {
   name_prefix = "${var.project_name}-ec2-sg"
   vpc_id      = aws_vpc.main.id
 
-  # Allow SSH access
+  # Allow SSH access (restrict to your IP for security)
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_ssh_cidr
     description = "SSH access"
   }
 
@@ -129,13 +134,20 @@ resource "aws_security_group" "ec2" {
   }
 }
 
-# Create an EC2 instance
+# Create an EC2 instance (Free Tier eligible: t2.micro, 750 hours/month)
 resource "aws_instance" "web_server" {
   ami                    = data.aws_ami.amazon_linux_2.id
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.ec2.id]
   key_name               = var.key_pair_name
+
+  # Free tier optimization: Use EBS gp2 storage
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 8  # Minimum size for Amazon Linux 2
+    delete_on_termination = true
+  }
 
   # User data script to install and start a simple web server
   user_data = <<-EOF
@@ -148,9 +160,48 @@ resource "aws_instance" "web_server" {
               echo "<p>This server was created with Terraform</p>" >> /var/www/html/index.html
               echo "<p>Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" >> /var/www/html/index.html
               echo "<p>Availability Zone: $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)</p>" >> /var/www/html/index.html
+              echo "<p>Free Tier Instance - Remember to destroy when done!</p>" >> /var/www/html/index.html
               EOF
 
   tags = {
     Name = "${var.project_name}-web-server"
+  }
+}
+
+# Optional: Create a simple S3 bucket for learning (Free tier: 5GB storage, 20,000 GET requests, 2,000 PUT requests)
+resource "aws_s3_bucket" "learning_bucket" {
+  bucket = "${var.project_name}-${random_string.bucket_suffix.result}"
+  
+  tags = {
+    Name = "${var.project_name}-learning-bucket"
+  }
+}
+
+# Generate a random string for unique bucket names
+resource "random_string" "bucket_suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+# S3 bucket versioning (disabled for cost savings)
+resource "aws_s3_bucket_versioning" "learning_bucket" {
+  bucket = aws_s3_bucket.learning_bucket.id
+  versioning_configuration {
+    status = "Disabled"
+  }
+}
+
+# S3 bucket lifecycle rule to delete incomplete multipart uploads (cost savings)
+resource "aws_s3_bucket_lifecycle_configuration" "learning_bucket" {
+  bucket = aws_s3_bucket.learning_bucket.id
+
+  rule {
+    id     = "cleanup-incomplete-uploads"
+    status = "Enabled"
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
   }
 } 

@@ -55,15 +55,15 @@ variable "availability_zone" {
   default     = "us-west-2a"
 }
 
-# EC2 instance type
+# EC2 instance type (Free tier eligible: t2.micro)
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "EC2 instance type (use t2.micro for free tier)"
   type        = string
   default     = "t2.micro"
   
   validation {
-    condition     = can(regex("^t2\\.", var.instance_type)) || can(regex("^t3\\.", var.instance_type))
-    error_message = "Instance type should be t2 or t3 series for learning purposes."
+    condition     = can(regex("^t2\\.micro$", var.instance_type)) || can(regex("^t3\\.micro$", var.instance_type))
+    error_message = "For free tier, use t2.micro or t3.micro only."
   }
 }
 
@@ -79,6 +79,18 @@ variable "key_pair_name" {
   }
 }
 
+# Allowed SSH CIDR blocks (restrict to your IP for security)
+variable "allowed_ssh_cidr" {
+  description = "CIDR blocks allowed to SSH to the EC2 instance"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]  # WARNING: Change this to your IP for production
+  
+  validation {
+    condition     = length(var.allowed_ssh_cidr) > 0
+    error_message = "At least one SSH CIDR block must be specified."
+  }
+}
+
 # Tags
 variable "tags" {
   description = "Additional tags for all resources"
@@ -87,5 +99,6 @@ variable "tags" {
     Owner       = "Terraform Learner"
     Purpose     = "Learning"
     CostCenter  = "Training"
+    FreeTier    = "Yes"
   }
 } 
